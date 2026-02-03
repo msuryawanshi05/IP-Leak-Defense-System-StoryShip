@@ -1,0 +1,226 @@
+// Export utilities for portfolio and reports
+
+import { getBaseUrl } from "./utils"
+
+export interface ExportData {
+  address: string
+  stats: {
+    totalFiles: number
+    totalIPAssets: number
+    totalTransactions: number
+    totalStorage: number
+  }
+  versions: Array<{
+    name: string
+    hash: string
+    timestamp: string
+    transactionHash?: string
+    ipAssetId?: string
+    size: number
+  }>
+  ipAssets: Array<{
+    ipAssetId: string
+    fileHash: string
+    registeredAt: number
+    transactionHash?: string
+  }>
+  exportedAt: string
+}
+
+export function exportToJSON(data: ExportData): void {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `storyproof-portfolio-${Date.now()}.json`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+export function exportToCSV(data: ExportData): void {
+  // Export versions to CSV
+  const headers = ["Name", "Hash", "Timestamp", "Transaction Hash", "IP Asset ID", "Size (bytes)"]
+  const rows = data.versions.map((v) => [
+    v.name,
+    v.hash,
+    v.timestamp,
+    v.transactionHash || "",
+    v.ipAssetId || "",
+    v.size.toString(),
+  ])
+
+  const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(","))].join("\n")
+
+  const blob = new Blob([csvContent], { type: "text/csv" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `storyproof-versions-${Date.now()}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+export async function generateOwnershipCertificate(
+  ipAssetId: string,
+  owner: string,
+  fileHash: string,
+  registeredAt: number,
+): Promise<string> {
+  const baseUrl = getBaseUrl()
+  const verifyUrl = `${baseUrl}/verify`
+
+  // Generate HTML certificate
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>IP Ownership Certificate</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 50px;
+      border: 4px solid #1a1a1a;
+      background: #ffffff;
+      color: #1a1a1a;
+    }
+    .logo {
+      position: absolute;
+      top: 30px;
+      left: 50px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #3B82F6;
+      letter-spacing: 0.5px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+      padding-top: 20px;
+    }
+    .title {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #666;
+      font-weight: normal;
+      letter-spacing: 0.5px;
+    }
+    .content {
+      margin: 50px 0;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 16px 24px;
+      align-items: start;
+    }
+    .field {
+      display: contents;
+    }
+    .label {
+      font-weight: bold;
+      font-size: 14px;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-top: 2px;
+    }
+    .value {
+      font-family: 'Courier New', 'Monaco', monospace;
+      font-size: 13px;
+      word-break: break-all;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 2px 0;
+    }
+    .footer {
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 2px solid #e5e5e5;
+      text-align: center;
+      font-size: 11px;
+      color: #666;
+      line-height: 1.8;
+    }
+    .footer p {
+      margin: 6px 0;
+    }
+    .verify-link {
+      color: #3B82F6;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .verify-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">StoryProof</div>
+
+  <div class="header">
+    <div class="title">CERTIFICATE OF IP OWNERSHIP</div>
+    <div class="subtitle">StoryProof - Blockchain Verified</div>
+  </div>
+
+  <div class="content">
+    <div class="field">
+      <div class="label">IP Asset ID:</div>
+      <div class="value">${ipAssetId}</div>
+    </div>
+    <div class="field">
+      <div class="label">Owner Address:</div>
+      <div class="value">${owner}</div>
+    </div>
+    <div class="field">
+      <div class="label">File Hash:</div>
+      <div class="value">${fileHash}</div>
+    </div>
+    <div class="field">
+      <div class="label">Registered On:</div>
+      <div class="value">${new Date(registeredAt * 1000).toLocaleString()}</div>
+    </div>
+    <div class="field">
+      <div class="label">Verification:</div>
+      <div class="value">Verified on Story Protocol Blockchain</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>This certificate verifies the ownership of the Intellectual Property Asset listed above.</p>
+    <p>Generated by StoryProof on ${new Date().toLocaleString()}</p>
+    <p>Verify at: <a href="${verifyUrl}" class="verify-link">${verifyUrl}</a></p>
+  </div>
+</body>
+</html>
+  `
+
+  return html
+}
+
+export function downloadCertificate(html: string, filename: string): void {
+  const blob = new Blob([html], { type: "text/html" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+

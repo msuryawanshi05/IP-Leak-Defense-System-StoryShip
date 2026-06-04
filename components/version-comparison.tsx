@@ -1,8 +1,7 @@
 "use client"
 
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { GitCompare, X, ArrowRight } from "lucide-react"
 
 interface Version {
   id: number
@@ -24,9 +23,9 @@ interface VersionComparisonProps {
 }
 
 export default function VersionComparison({ versions, onClose }: VersionComparisonProps) {
-  const [selected, setSelected] = useState<number[]>([0, versions.length - 1])
+  const [selected, setSelected] = useState<number[]>([0, Math.min(1, versions.length - 1)])
 
-  const toggleSelection = (index: number) => {
+  const toggle = (index: number) => {
     if (selected.includes(index)) {
       setSelected(selected.filter((i) => i !== index))
     } else if (selected.length < 2) {
@@ -36,134 +35,187 @@ export default function VersionComparison({ versions, onClose }: VersionComparis
 
   const v1 = versions[selected[0]]
   const v2 = versions[selected[1]]
+  const ready = v1 && v2 && v1 !== v2
 
-  if (!v1 || !v2) {
-    return (
-      <Card className="p-6">
-        <p className="text-muted-foreground mb-4">Select two versions to compare</p>
-        <div className="space-y-2 mb-4">
-          {versions.map((version, index) => (
-            <div key={version.id} className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selected.includes(index)}
-                onChange={() => toggleSelection(index)}
-                disabled={selected.length === 2 && !selected.includes(index)}
-                className="cursor-pointer"
-              />
-              <label className="flex-1 cursor-pointer text-sm">
-                v{versions.length - index}: {version.name}
-              </label>
-            </div>
-          ))}
-        </div>
-        <Button onClick={onClose} variant="outline" className="w-full bg-transparent">
-          Close
-        </Button>
-      </Card>
-    )
-  }
-
-  const timeDiff = Math.abs(new Date(v2.timestamp).getTime() - new Date(v1.timestamp).getTime())
+  const timeDiff = ready ? Math.abs(new Date(v2.timestamp).getTime() - new Date(v1.timestamp).getTime()) : 0
   const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
   const hoursDiff = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-
-  const hashMatch = v1.hash === v2.hash
-  const sizeChange = v2.size - v1.size
-  const sizePercent = v1.size > 0 ? ((sizeChange / v1.size) * 100).toFixed(1) : 0
+  const hashMatch = ready ? v1.hash === v2.hash : false
+  const sizeChange = ready ? v2.size - v1.size : 0
+  const sizePercent = ready && v1.size > 0 ? ((sizeChange / v1.size) * 100).toFixed(1) : "0"
 
   return (
-    <Card className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Version Comparison</h3>
-        <Button onClick={onClose} variant="ghost" size="sm">
-          ✕
-        </Button>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+            <GitCompare size={15} className="text-primary" />
+          </div>
+          <div>
+            <p className="font-bold text-foreground">Version Comparison</p>
+            <p className="text-xs text-muted-foreground">Select two versions to compare</p>
+          </div>
+        </div>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+          <X size={16} />
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {[v1, v2].map((version, idx) => (
-          <div key={version.id} className="space-y-3 p-4 bg-muted rounded-lg">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Version</p>
-              <p className="text-sm font-semibold text-foreground">v{versions.length - versions.indexOf(version)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Name</p>
-              <p className="text-sm text-foreground truncate">{version.name}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Date</p>
-              <p className="text-sm text-foreground">{new Date(version.timestamp).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Size</p>
-              <p className="text-sm text-foreground">
-                {version.size > 0 ? `${(version.size / 1024).toFixed(2)} KB` : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Hash (First 12)</p>
-              <p className="font-mono text-xs text-foreground">{version.hash.slice(0, 12)}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-border pt-6">
-        <h4 className="text-sm font-semibold mb-4 text-foreground">Comparison Results</h4>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center p-3 bg-muted rounded">
-            <span className="text-sm text-muted-foreground">File Content Changed</span>
-            <span className={`text-sm font-semibold ${hashMatch ? "text-muted-foreground" : "text-accent"}`}>
-              {hashMatch ? "No" : "Yes"}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center p-3 bg-muted rounded">
-            <span className="text-sm text-muted-foreground">File Size Change</span>
-            <span
-              className={`text-sm font-semibold ${sizeChange === 0 ? "text-muted-foreground" : sizeChange > 0 ? "text-destructive" : "text-accent"}`}
-            >
-              {sizeChange === 0
-                ? "No change"
-                : `${sizeChange > 0 ? "+" : ""}${(sizeChange / 1024).toFixed(2)} KB (${sizePercent}%)`}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center p-3 bg-muted rounded">
-            <span className="text-sm text-muted-foreground">Time Between Versions</span>
-            <span className="text-sm font-semibold text-foreground">
-              {daysDiff} days, {hoursDiff} hours
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center p-3 bg-muted rounded">
-            <span className="text-sm text-muted-foreground">On-Chain Status</span>
-            <span className="text-sm font-semibold text-accent">
-              {v1.transactionHash && v2.transactionHash ? "Both verified" : "Pending"}
-            </span>
-          </div>
+      {/* Version picker */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Select Versions</p>
+        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+          {versions.map((v, idx) => {
+            const isSelected = selected.includes(idx)
+            const selIdx = selected.indexOf(idx)
+            return (
+              <button
+                key={v.id}
+                onClick={() => toggle(idx)}
+                disabled={selected.length === 2 && !isSelected}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-200 ${
+                  isSelected
+                    ? "border-primary/50 bg-primary/10"
+                    : "border-border hover:border-border/80 hover:bg-secondary/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                  isSelected ? "border-primary bg-primary" : "border-border"
+                }`}>
+                  {isSelected && <span className="text-primary-foreground text-xs font-bold">{selIdx + 1}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground text-sm truncate">v{versions.length - idx}: {v.name}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(v.timestamp).toLocaleDateString()}</p>
+                </div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      <div className="border-t border-border pt-6">
-        <h4 className="text-sm font-semibold mb-3 text-foreground">Hash Comparison</h4>
-        <div className="space-y-2">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">v{versions.length - versions.indexOf(v1)}</p>
-            <p className="font-mono text-xs text-foreground break-all bg-muted p-2 rounded">{v1.hash}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">v{versions.length - versions.indexOf(v2)}</p>
-            <p className="font-mono text-xs text-foreground break-all bg-muted p-2 rounded">{v2.hash}</p>
-          </div>
-        </div>
-      </div>
+      {/* Comparison panel */}
+      {ready && (
+        <div className="space-y-4 animate-fade-in-up">
+          {/* Side by side */}
+          <div className="grid grid-cols-2 gap-3 relative">
+            {/* Arrow in middle */}
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex items-center z-10 pointer-events-none">
+              <div className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center">
+                <ArrowRight size={14} className="text-muted-foreground" />
+              </div>
+            </div>
 
-      <Button onClick={onClose} className="w-full">
-        Close Comparison
-      </Button>
-    </Card>
+            {[v1, v2].map((v, i) => (
+              <div key={v.id} className="glass-card p-4 space-y-3">
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                  i === 0 ? "bg-primary/15 text-primary border border-primary/25" : "bg-accent/15 text-accent border border-accent/25"
+                }`}>
+                  {i === 0 ? "Version A" : "Version B"}
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Label</p>
+                    <p className="font-medium text-foreground">v{versions.length - versions.indexOf(v)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Name</p>
+                    <p className="font-medium text-foreground truncate">{v.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Date</p>
+                    <p className="font-medium text-foreground">{new Date(v.timestamp).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Size</p>
+                    <p className="font-medium text-foreground">{v.size > 0 ? `${(v.size / 1024).toFixed(2)} KB` : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Hash (first 12)</p>
+                    <p className="font-mono text-foreground">{v.hash.slice(0, 12)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Results */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Comparison Results</p>
+            <div className="space-y-2">
+              {[
+                {
+                  label: "File Content Changed",
+                  value: hashMatch ? "No — identical files" : "Yes — different content",
+                  status: hashMatch ? "neutral" : "changed",
+                },
+                {
+                  label: "File Size Change",
+                  value: sizeChange === 0
+                    ? "No change"
+                    : `${sizeChange > 0 ? "+" : ""}${(sizeChange / 1024).toFixed(2)} KB (${sizePercent}%)`,
+                  status: sizeChange === 0 ? "neutral" : sizeChange > 0 ? "increased" : "decreased",
+                },
+                {
+                  label: "Time Between Versions",
+                  value: `${daysDiff} days, ${hoursDiff} hours`,
+                  status: "info",
+                },
+                {
+                  label: "On-Chain Status",
+                  value: v1.transactionHash && v2.transactionHash ? "Both verified on-chain" : "Partially recorded",
+                  status: v1.transactionHash && v2.transactionHash ? "verified" : "neutral",
+                },
+              ].map(({ label, value, status }) => (
+                <div key={label} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
+                  <span className="text-sm text-muted-foreground">{label}</span>
+                  <span className={`text-sm font-semibold ${
+                    status === "verified" ? "text-[oklch(0.68_0.18_145)]" :
+                    status === "changed" ? "text-accent" :
+                    status === "increased" ? "text-destructive" :
+                    status === "decreased" ? "text-[oklch(0.68_0.18_145)]" :
+                    "text-foreground"
+                  }`}>
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Full hash comparison */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">SHA-256 Hash Comparison</p>
+            <div className="space-y-2">
+              {[v1, v2].map((v, i) => (
+                <div key={v.id} className="rounded-xl bg-secondary/30 border border-border/50 overflow-hidden">
+                  <div className="px-3 py-1.5 border-b border-border/30 flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${i === 0 ? "bg-primary" : "bg-accent"}`} />
+                    <span className="text-xs text-muted-foreground">v{versions.length - versions.indexOf(v)}</span>
+                  </div>
+                  <p className="font-mono text-xs text-foreground p-3 break-all leading-relaxed">{v.hash}</p>
+                </div>
+              ))}
+            </div>
+            {hashMatch && (
+              <div className="mt-2 px-3 py-2 rounded-xl bg-[oklch(0.68_0.18_145/0.08)] border border-[oklch(0.68_0.18_145/0.25)] text-xs text-[oklch(0.68_0.18_145)] text-center font-medium">
+                ✓ Hashes are identical — same file content
+              </div>
+            )}
+          </div>
+
+          <button onClick={onClose} className="btn-glow w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm">
+            Close Comparison
+          </button>
+        </div>
+      )}
+
+      {!ready && selected.length < 2 && (
+        <p className="text-center text-sm text-muted-foreground py-4">
+          Select {2 - selected.length} more version{2 - selected.length !== 1 ? "s" : ""} to compare
+        </p>
+      )}
+    </div>
   )
 }

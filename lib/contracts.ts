@@ -10,24 +10,24 @@ export interface ContractConfig {
 
 export const NETWORKS = {
   story: {
-    chainId: 1337, // Story Protocol mainnet (update with actual chain ID)
-    name: "Story Protocol",
+    chainId: 1514, // Story Protocol mainnet
+    name: "Story Mainnet",
     rpcUrl: process.env.NEXT_PUBLIC_STORY_RPC_URL || "https://rpc.story.foundation",
-    blockExplorer: process.env.NEXT_PUBLIC_STORY_EXPLORER || "https://explorer.story.foundation",
+    blockExplorer: process.env.NEXT_PUBLIC_STORY_EXPLORER || "https://storyscan.xyz",
     nativeCurrency: {
-      name: "STORY",
-      symbol: "STORY",
+      name: "IP",
+      symbol: "IP",
       decimals: 18,
     },
   },
   "story-testnet": {
-    chainId: 1338, // Story Protocol testnet (update with actual chain ID)
-    name: "Story Testnet",
-    rpcUrl: process.env.NEXT_PUBLIC_STORY_TESTNET_RPC_URL || "https://testnet-rpc.story.foundation",
-    blockExplorer: process.env.NEXT_PUBLIC_STORY_TESTNET_EXPLORER || "https://testnet-explorer.story.foundation",
+    chainId: 1513, // Story Protocol Odyssey testnet
+    name: "Story Odyssey Testnet",
+    rpcUrl: process.env.NEXT_PUBLIC_STORY_TESTNET_RPC_URL || "https://odyssey.storyrpc.io",
+    blockExplorer: process.env.NEXT_PUBLIC_STORY_TESTNET_EXPLORER || "https://odyssey-testnet-explorer.storyrpc.io",
     nativeCurrency: {
-      name: "STORY",
-      symbol: "STORY",
+      name: "IP",
+      symbol: "IP",
       decimals: 18,
     },
   },

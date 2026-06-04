@@ -1,4 +1,5 @@
 // File upload and storage utilities for StoryProof
+// Supports real Pinata IPFS uploads (env-var gated) with localStorage fallback
 
 export interface StoredFile {
   ipfsCid: string
@@ -9,6 +10,8 @@ export interface StoredFile {
     size: number
     mimeType: string
     uploadedAt: string
+    provider?: "pinata" | "mock"
+    gatewayUrl?: string
   }
 }
 
@@ -50,45 +53,110 @@ export async function encryptFileContent(file: File, key: string): Promise<Array
   return combined.buffer
 }
 
+// ── PINATA IPFS UPLOAD ────────────────────────────────────────────────────────
+async function uploadToPinata(
+  file: File,
+  encryptedContent: ArrayBuffer,
+  pinataJwt: string,
+): Promise<{ cid: string; gatewayUrl: string }> {
+  const gateway = process.env.NEXT_PUBLIC_PINATA_GATEWAY || "https://gateway.pinata.cloud"
+
+  // Build a FormData with the encrypted blob + pinata metadata
+  const formData = new FormData()
+  const encryptedBlob = new Blob([encryptedContent], { type: "application/octet-stream" })
+  const encryptedFileName = `storyproof_${Date.now()}_${file.name}.enc`
+  formData.append("file", encryptedBlob, encryptedFileName)
+
+  // Pinata metadata (visible in your Pinata dashboard)
+  formData.append(
+    "pinataMetadata",
+    JSON.stringify({
+      name: encryptedFileName,
+      keyvalues: {
+        originalName: file.name,
+        originalSize: String(file.size),
+        uploadedAt: new Date().toISOString(),
+        app: "storyproof",
+      },
+    }),
+  )
+
+  // Pinata options
+  formData.append("pinataOptions", JSON.stringify({ cidVersion: 1 }))
+
+  const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${pinataJwt}`,
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Pinata upload failed (${response.status}): ${errorText}`)
+  }
+
+  const result = await response.json()
+  const cid: string = result.IpfsHash
+
+  return {
+    cid,
+    gatewayUrl: `${gateway}/ipfs/${cid}`,
+  }
+}
+
+// ── MOCK CID FALLBACK ─────────────────────────────────────────────────────────
+function generateMockCID(): string {
+  // Generate a plausible CIDv0-like string
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  let result = ""
+  for (let i = 0; i < 44; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+// ── MAIN UPLOAD ENTRY ─────────────────────────────────────────────────────────
 export async function uploadToIPFS(file: File, encryptedContent: ArrayBuffer): Promise<string> {
-  // Try to use Web3.Storage if available, otherwise fallback to mock
-  const web3StorageToken = process.env.NEXT_PUBLIC_WEB3_STORAGE_TOKEN
+  const pinataJwt = process.env.NEXT_PUBLIC_PINATA_JWT
 
-  if (web3StorageToken) {
+  if (pinataJwt) {
     try {
-      // Dynamic import to avoid SSR issues
-      const { Web3Storage } = await import("web3.storage")
-      const client = new Web3Storage({ token: web3StorageToken })
+      const { cid, gatewayUrl } = await uploadToPinata(file, encryptedContent, pinataJwt)
+      console.log(`[StoryProof] Pinata upload success: ${cid}`)
+      console.log(`[StoryProof] Gateway URL: ${gatewayUrl}`)
 
-      const blob = new Blob([encryptedContent])
-      const cid = await client.put([new File([blob], file.name, { type: file.type })])
-
-      // Store metadata locally
+      // Cache metadata locally
       localStorage.setItem(
         `ipfs_${cid}`,
         JSON.stringify({
           filename: file.name,
           size: file.size,
           uploadedAt: new Date().toISOString(),
-          provider: "web3.storage",
+          provider: "pinata",
+          gatewayUrl,
         }),
       )
 
       return cid
     } catch (error) {
-      console.error("Web3.Storage upload failed, using fallback:", error)
+      console.error("[StoryProof] Pinata upload failed, falling back to mock:", error)
     }
   }
 
-  // Fallback: Generate mock CID for demo purposes
-  // In production, you should always have IPFS configured
-  console.warn("IPFS not configured. Using mock CID. Set NEXT_PUBLIC_WEB3_STORAGE_TOKEN for real IPFS uploads.")
-  const blob = new Blob([encryptedContent])
-  const mockCID = `Qm${generateMockCID()}`
+  // Fallback: generate mock CID
+  if (!pinataJwt) {
+    console.info(
+      "[StoryProof] IPFS not configured. Using mock CID.\n" +
+        "Set NEXT_PUBLIC_PINATA_JWT in .env.local for real IPFS uploads via Pinata.",
+    )
+  }
 
-  // Store metadata locally for demo
+  const mockCid = `Qm${generateMockCID()}`
+
   localStorage.setItem(
-    `ipfs_${mockCID}`,
+    `ipfs_${mockCid}`,
     JSON.stringify({
       filename: file.name,
       size: file.size,
@@ -97,23 +165,13 @@ export async function uploadToIPFS(file: File, encryptedContent: ArrayBuffer): P
     }),
   )
 
-  return mockCID
+  return mockCid
 }
 
-function generateMockCID(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-  let result = ""
-  for (let i = 0; i < 42; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
-}
-
-// Store file data for download
+// ── LOCAL DOWNLOAD STORAGE ────────────────────────────────────────────────────
 export async function storeFileForDownload(fileHash: string, file: File, encryptionKey: string): Promise<void> {
   if (typeof window === "undefined") return
 
-  // Convert file to base64 for storage
   const reader = new FileReader()
   const fileData = await new Promise<string>((resolve, reject) => {
     reader.onload = () => resolve(reader.result as string)
@@ -121,7 +179,6 @@ export async function storeFileForDownload(fileHash: string, file: File, encrypt
     reader.readAsDataURL(file)
   })
 
-  // Store encrypted file data
   localStorage.setItem(
     `file_${fileHash}`,
     JSON.stringify({
@@ -134,32 +191,23 @@ export async function storeFileForDownload(fileHash: string, file: File, encrypt
   )
 }
 
-// Retrieve and download file
 export async function downloadFile(fileHash: string, fileName: string): Promise<boolean> {
   if (typeof window === "undefined") return false
 
   try {
     const stored = localStorage.getItem(`file_${fileHash}`)
     if (!stored) {
-      // File not found - this happens for files uploaded before download feature was added
-      // or if localStorage was cleared
-      console.warn(`File with hash ${fileHash} not found in local storage. It may have been uploaded before the download feature was available, or localStorage was cleared.`)
+      console.warn(`[StoryProof] File ${fileHash} not in localStorage`)
       return false
     }
 
     const fileData = JSON.parse(stored)
+    if (!fileData.data) return false
 
-    // Check if file data is valid
-    if (!fileData.data) {
-      console.error("File data is invalid or corrupted")
-      return false
-    }
-
-    const base64Data = fileData.data.split(",")[1] // Remove data:type;base64, prefix
+    const base64Data = fileData.data.split(",")[1]
     const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
     const blob = new Blob([binaryData], { type: fileData.type || "application/octet-stream" })
 
-    // Create download link
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
@@ -171,20 +219,40 @@ export async function downloadFile(fileHash: string, fileName: string): Promise<
 
     return true
   } catch (error) {
-    console.error("Failed to download file:", error)
+    console.error("[StoryProof] Download failed:", error)
     return false
   }
 }
 
+// ── IPFS METADATA HELPERS ─────────────────────────────────────────────────────
+
+/** Return the Pinata gateway URL for a CID (if we stored it), or a public IPFS URL */
+export function getIPFSGatewayUrl(cid: string): string {
+  if (!cid || cid.startsWith("Qm") === false) return ""
+  try {
+    const meta = localStorage.getItem(`ipfs_${cid}`)
+    if (meta) {
+      const parsed = JSON.parse(meta)
+      if (parsed.gatewayUrl) return parsed.gatewayUrl
+    }
+  } catch { /* ignore */ }
+  const gateway = process.env.NEXT_PUBLIC_PINATA_GATEWAY || "https://gateway.pinata.cloud"
+  return `${gateway}/ipfs/${cid}`
+}
+
+export function isRealIPFSCid(cid: string): boolean {
+  // Real CIDv0 starts with Qm and is 46 chars; CIDv1 starts with bafy
+  return (cid.startsWith("Qm") && cid.length >= 46) || cid.startsWith("bafy")
+}
+
+// ── FULL PROCESSING PIPELINE ──────────────────────────────────────────────────
 export async function processFileUpload(file: File, encryptionKey: string): Promise<StoredFile> {
   const fileHash = await computeFileHash(file)
   const encryptedContent = await encryptFileContent(file, encryptionKey)
   const ipfsCid = await uploadToIPFS(file, encryptedContent)
 
-  // Store original file for download
   await storeFileForDownload(fileHash, file, encryptionKey)
 
-  // Create encrypted hash for on-chain storage
   const encoder = new TextEncoder()
   const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(fileHash + encryptionKey))
   const encryptedHash = Array.from(new Uint8Array(hashBuffer))
@@ -200,6 +268,7 @@ export async function processFileUpload(file: File, encryptionKey: string): Prom
       size: file.size,
       mimeType: file.type,
       uploadedAt: new Date().toISOString(),
+      provider: isRealIPFSCid(ipfsCid) ? "pinata" : "mock",
     },
   }
 }

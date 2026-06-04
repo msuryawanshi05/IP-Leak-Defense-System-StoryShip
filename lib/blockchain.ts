@@ -12,6 +12,8 @@ export interface VersionCheckpoint {
   author: string
   timestamp: number
   ipAssetId?: string // Story Protocol IP Asset ID
+  fileName?: string  // Original file name for display
+  fileSize?: number  // File size in bytes
 }
 
 export interface VersionProof {
@@ -45,6 +47,7 @@ export async function createVersionCheckpoint(
   versionNote: string,
   address: string,
   fileName?: string,
+  fileSize?: number,
 ): Promise<VersionCheckpoint> {
   const timestamp = Math.floor(Date.now() / 1000)
 
@@ -76,6 +79,8 @@ export async function createVersionCheckpoint(
     author: address,
     timestamp,
     ipAssetId,
+    fileName,
+    fileSize,
   }
 
   // Try to store on-chain, fallback to localStorage

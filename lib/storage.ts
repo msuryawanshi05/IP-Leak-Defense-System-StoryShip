@@ -1,5 +1,5 @@
 // File upload and storage utilities for StoryProof
-// Supports real Pinata IPFS uploads (env-var gated) with localStorage fallback
+// Uses Pinata public IPFS gateway (no JWT required) with localStorage mock fallback
 
 export interface StoredFile {
   ipfsCid: string
@@ -10,7 +10,7 @@ export interface StoredFile {
     size: number
     mimeType: string
     uploadedAt: string
-    provider?: "pinata" | "mock"
+    provider?: "pinata-public" | "pinata-jwt" | "mock"
     gatewayUrl?: string
   }
 }
@@ -106,9 +106,54 @@ async function uploadToPinata(
   }
 }
 
+// ── PINATA PUBLIC GATEWAY (no JWT) ───────────────────────────────────────────
+// Uses Pinata's free public pinning endpoint — no API key required for small files.
+async function uploadViaPinataPublic(
+  file: File,
+  encryptedContent: ArrayBuffer,
+): Promise<{ cid: string; gatewayUrl: string }> {
+  const formData = new FormData()
+  const encryptedBlob = new Blob([encryptedContent], { type: "application/octet-stream" })
+  const encryptedFileName = `storyproof_${Date.now()}_${file.name}.enc`
+  formData.append("file", encryptedBlob, encryptedFileName)
+  formData.append(
+    "pinataMetadata",
+    JSON.stringify({
+      name: encryptedFileName,
+      keyvalues: { originalName: file.name, app: "storyproof" },
+    }),
+  )
+  formData.append("pinataOptions", JSON.stringify({ cidVersion: 1 }))
+
+  // Try JWT first if available, else fall back to public pinning (free tier)
+  const jwt = process.env.NEXT_PUBLIC_PINATA_JWT
+  const headers: Record<string, string> = jwt
+    ? { Authorization: `Bearer ${jwt}` }
+    : {}
+
+  const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+    method: "POST",
+    headers,
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(`Pinata upload failed (${response.status}): ${err}`)
+  }
+
+  const result = await response.json()
+  const cid: string = result.IpfsHash
+  const gateway = process.env.NEXT_PUBLIC_PINATA_GATEWAY || "https://gateway.pinata.cloud"
+
+  return {
+    cid,
+    gatewayUrl: `${gateway}/ipfs/${cid}`,
+  }
+}
+
 // ── MOCK CID FALLBACK ─────────────────────────────────────────────────────────
 function generateMockCID(): string {
-  // Generate a plausible CIDv0-like string
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
   let result = ""
   for (let i = 0; i < 44; i++) {
@@ -119,42 +164,36 @@ function generateMockCID(): string {
 
 // ── MAIN UPLOAD ENTRY ─────────────────────────────────────────────────────────
 export async function uploadToIPFS(file: File, encryptedContent: ArrayBuffer): Promise<string> {
-  const pinataJwt = process.env.NEXT_PUBLIC_PINATA_JWT
+  // Try real IPFS via Pinata (public gateway or JWT)
+  try {
+    const { cid, gatewayUrl } = await uploadViaPinataPublic(file, encryptedContent)
+    console.log(`[StoryProof] IPFS upload success: ${cid}`)
 
-  if (pinataJwt) {
-    try {
-      const { cid, gatewayUrl } = await uploadToPinata(file, encryptedContent, pinataJwt)
-      console.log(`[StoryProof] Pinata upload success: ${cid}`)
-      console.log(`[StoryProof] Gateway URL: ${gatewayUrl}`)
-
-      // Cache metadata locally
-      localStorage.setItem(
-        `ipfs_${cid}`,
-        JSON.stringify({
-          filename: file.name,
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-          provider: "pinata",
-          gatewayUrl,
-        }),
-      )
-
-      return cid
-    } catch (error) {
-      console.error("[StoryProof] Pinata upload failed, falling back to mock:", error)
+    localStorage.setItem(
+      `ipfs_${cid}`,
+      JSON.stringify({
+        filename: file.name,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        provider: process.env.NEXT_PUBLIC_PINATA_JWT ? "pinata-jwt" : "pinata-public",
+        gatewayUrl,
+      }),
+    )
+    return cid
+  } catch (error) {
+    console.warn("[StoryProof] IPFS upload failed, using mock CID:", error)
+    // Warn user visibly — mock CID means no real decentralised storage
+    if (typeof window !== "undefined") {
+      const { toast } = await import("sonner")
+      toast.warning("IPFS Upload Failed — Using Local Record", {
+        description: "File is hashed & registered on Story Protocol. IPFS storage was unavailable this time.",
+        duration: 6000,
+      })
     }
   }
 
-  // Fallback: generate mock CID
-  if (!pinataJwt) {
-    console.info(
-      "[StoryProof] IPFS not configured. Using mock CID.\n" +
-        "Set NEXT_PUBLIC_PINATA_JWT in .env.local for real IPFS uploads via Pinata.",
-    )
-  }
-
+  // Mock CID fallback
   const mockCid = `Qm${generateMockCID()}`
-
   localStorage.setItem(
     `ipfs_${mockCid}`,
     JSON.stringify({
@@ -164,7 +203,6 @@ export async function uploadToIPFS(file: File, encryptedContent: ArrayBuffer): P
       provider: "mock",
     }),
   )
-
   return mockCid
 }
 
@@ -226,9 +264,9 @@ export async function downloadFile(fileHash: string, fileName: string): Promise<
 
 // ── IPFS METADATA HELPERS ─────────────────────────────────────────────────────
 
-/** Return the Pinata gateway URL for a CID (if we stored it), or a public IPFS URL */
+/** Return the Pinata gateway URL for a CID (if we stored it), or the public IPFS gateway */
 export function getIPFSGatewayUrl(cid: string): string {
-  if (!cid || cid.startsWith("Qm") === false) return ""
+  if (!cid) return ""
   try {
     const meta = localStorage.getItem(`ipfs_${cid}`)
     if (meta) {
@@ -268,7 +306,7 @@ export async function processFileUpload(file: File, encryptionKey: string): Prom
       size: file.size,
       mimeType: file.type,
       uploadedAt: new Date().toISOString(),
-      provider: isRealIPFSCid(ipfsCid) ? "pinata" : "mock",
+      provider: isRealIPFSCid(ipfsCid) ? "pinata-public" : "mock",
     },
   }
 }

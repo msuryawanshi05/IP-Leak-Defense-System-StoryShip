@@ -4,9 +4,10 @@ import type React from "react"
 import { useState, useRef, useCallback } from "react"
 import { processFileUpload } from "@/lib/storage"
 import { createVersionCheckpoint } from "@/lib/blockchain"
-import { UploadCloud, FileText, X, CheckCircle2, Loader2 } from "lucide-react"
+import { UploadCloud, FileText, X, CheckCircle2, Loader2, Shield } from "lucide-react"
 import { toast } from "sonner"
 import { fireConfetti, fireSideCannons } from "@/lib/confetti"
+import StoryNetworkGuard, { useStoryNetwork } from "@/components/story-network-guard"
 
 interface FileUploadProps {
   address: string | null
@@ -23,6 +24,7 @@ export default function FileUpload({ address, onUploaded, isFirstUpload = false 
   const [progressLabel, setProgressLabel] = useState("")
   const [done, setDone] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { isStoryOdyssey } = useStoryNetwork()
 
   const acceptFile = (f: File) => {
     setFile(f)
@@ -62,7 +64,7 @@ export default function FileUpload({ address, onUploaded, isFirstUpload = false 
       { label: "Computing SHA-256 hash…", pct: 20 },
       { label: "Encrypting with AES-GCM…", pct: 40 },
       { label: "Uploading to IPFS…", pct: 65 },
-      { label: "Registering IP Asset…", pct: 82 },
+      { label: "Registering IP Asset on Story…", pct: 82 },
       { label: "Recording on-chain…", pct: 95 },
     ]
 
@@ -112,8 +114,9 @@ export default function FileUpload({ address, onUploaded, isFirstUpload = false 
         ipAssetId: checkpoint.ipAssetId,
       }
 
-      toast.success("File Uploaded & Registered!", {
-        description: `"${file.name}" has been hashed and registered as an IP Asset.`,
+      toast.success("IP Asset Registered on Story!", {
+        description: `"${file.name}" is now on-chain with an immutable proof of ownership.`,
+        icon: <Shield size={16} />,
       })
 
       // 🎉 Celebrate!
@@ -147,8 +150,58 @@ export default function FileUpload({ address, onUploaded, isFirstUpload = false 
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
+  // ── No wallet: show connect prompt ─────────────────────────────────────────
+  if (!address) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center gap-5">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center animate-pulse-glow">
+          <Shield size={28} className="text-primary" />
+        </div>
+        <div>
+          <h3 className="font-bold text-foreground mb-1">Connect Wallet to Register IP</h3>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            StoryProof uses Story Odyssey Testnet to create an on-chain, immutable record of your creative work.
+            Connect your wallet to get started.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3 justify-center text-xs text-muted-foreground">
+          <span className="px-3 py-1.5 rounded-full border border-border bg-secondary/50">🔐 SHA-256 Hashed</span>
+          <span className="px-3 py-1.5 rounded-full border border-border bg-secondary/50">⛓️ Story Protocol</span>
+          <span className="px-3 py-1.5 rounded-full border border-border bg-secondary/50">🌐 IPFS Stored</span>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Wrong network: show inline guard ───────────────────────────────────────
+  if (!isStoryOdyssey) {
+    return (
+      <div className="space-y-4">
+        <StoryNetworkGuard />
+        {/* Allow drag-and-drop prep even on wrong network */}
+        <div className={`drop-zone opacity-40 cursor-not-allowed pointer-events-none`}>
+          <div className="p-8 flex flex-col items-center text-center">
+            <div className="w-16 h-16 mb-4 rounded-2xl flex items-center justify-center bg-secondary border border-border">
+              <UploadCloud size={28} className="text-muted-foreground" />
+            </div>
+            <p className="font-semibold text-foreground mb-1">Drag &amp; drop your file</p>
+            <p className="text-sm text-muted-foreground">Switch to Story Odyssey above to enable upload</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Correct network + wallet: show full upload ─────────────────────────────
   return (
     <div className="space-y-5">
+      {/* Story Network indicator */}
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/20 text-xs">
+        <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_oklch(var(--primary))] animate-pulse" />
+        <span className="text-primary font-semibold">Story Odyssey Testnet</span>
+        <span className="text-muted-foreground">· Chain 1513 · Ready to register IP</span>
+      </div>
+
       {/* Drop Zone */}
       <div
         className={`drop-zone ${isDragging ? "dragging" : ""} ${file ? "border-primary/50" : ""} relative cursor-pointer`}
@@ -257,17 +310,17 @@ export default function FileUpload({ address, onUploaded, isFirstUpload = false 
         {done ? (
           <>
             <CheckCircle2 size={18} />
-            Registered on Chain!
+            IP Asset Registered on Story!
           </>
         ) : isLoading ? (
           <>
             <Loader2 size={18} className="animate-spin" />
-            Processing…
+            Registering on Story Protocol…
           </>
         ) : (
           <>
             <UploadCloud size={18} />
-            Upload & Register IP Asset
+            Upload &amp; Register IP on Story
           </>
         )}
       </button>

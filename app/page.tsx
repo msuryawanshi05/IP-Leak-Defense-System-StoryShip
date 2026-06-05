@@ -49,9 +49,9 @@ const STEPS = [
 const FEATURES = [
   { icon: Shield, title: "Cryptographic Proof", desc: "SHA-256 file hashing creates an immutable fingerprint of your work. Any modification is instantly detectable.", color: "primary" },
   { icon: GitBranch, title: "Version History", desc: "Complete audit trail of every edit. Compare versions, track changes, and prove timeline of creation.", color: "accent" },
-  { icon: Zap, title: "Story Protocol IP", desc: "Register files as IP Assets on Story Protocol. Programmable licensing and royalty distribution ready.", color: "primary" },
+  { icon: Zap, title: "Story Protocol IP", desc: "Register files as IP Assets on Story Protocol Odyssey Testnet. Programmable licensing and royalty distribution ready.", color: "primary" },
   { icon: Lock, title: "AES-GCM Encryption", desc: "Files are encrypted on your device before upload. Only you hold the decryption key.", color: "accent" },
-  { icon: Globe, title: "IPFS Decentralized", desc: "Encrypted copies stored on IPFS via Web3.Storage for permanent, censorship-resistant access.", color: "primary" },
+  { icon: Globe, title: "IPFS Decentralized", desc: "Encrypted copies stored on IPFS via Pinata for permanent, censorship-resistant, content-addressed storage.", color: "primary" },
   { icon: CheckCircle2, title: "Instant Verification", desc: "Re-hash any file to verify authenticity. Compare computed hash against blockchain record in seconds.", color: "accent" },
 ]
 
@@ -162,11 +162,14 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <ThemeToggle compact />
             <button
-              onClick={() => setShowApp(true)}
+              onClick={() => {
+                const el = document.getElementById("how-it-works")
+                el?.scrollIntoView({ behavior: "smooth" })
+              }}
               className="btn-glow px-4 sm:px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all duration-200 hover:bg-primary/90"
             >
-              <span className="hidden sm:inline">Launch App &#x2192;</span>
-              <span className="sm:hidden">Launch</span>
+              <span className="hidden sm:inline">How It Works ↓</span>
+              <span className="sm:hidden">How?</span>
             </button>
           </div>
         </div>
@@ -200,10 +203,13 @@ export default function Home() {
           <div className="animate-fade-in-up animation-delay-300 flex flex-col sm:flex-row gap-4 justify-center items-center">
             <WalletConnect onConnect={handleConnect} />
             <button
-              onClick={() => setShowApp(true)}
+              onClick={() => {
+                const el = document.getElementById("how-it-works")
+                el?.scrollIntoView({ behavior: "smooth" })
+              }}
               className="group flex items-center gap-2 px-6 py-3 rounded-xl border border-border text-foreground font-medium hover:border-primary/50 hover:text-primary transition-all duration-200"
             >
-              Explore App
+              How It Works
               <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -309,7 +315,7 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-24 px-4">
+      <section id="how-it-works" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <RevealSection className="text-center mb-16">
             <span className="text-xs font-semibold text-primary uppercase tracking-widest mb-4 block">Process</span>

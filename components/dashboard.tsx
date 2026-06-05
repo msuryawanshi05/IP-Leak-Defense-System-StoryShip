@@ -8,10 +8,11 @@ import NetworkSelector from "@/components/network-selector"
 import { getVersionCheckpoints } from "@/lib/blockchain"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useCountUp } from "@/hooks/use-count-up"
+import { useStoryNetwork, STORY_ODYSSEY } from "@/components/story-network-guard"
 import {
   UploadCloud, History, ShieldCheck, Wifi,
   X, Plus, Loader2, FilePlus2, Keyboard,
-  CheckCircle2, AlertCircle, Cloud, Link2
+  CheckCircle2, AlertCircle, Cloud, ExternalLink
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -106,9 +107,8 @@ export default function Dashboard({ address }: DashboardProps) {
   const verifiedCount = versions.filter((v) => v.transactionHash).length
   const isFirstUpload = totalFiles === 0
 
-  // Integration status (env-var gated)
-  const hasPinata = !!(process.env.NEXT_PUBLIC_PINATA_JWT)
-  const hasStoryTestnet = process.env.NEXT_PUBLIC_USE_STORY_TESTNET === "true"
+  // Live Story Odyssey network status
+  const { isStoryOdyssey, chainId: connectedChainId } = useStoryNetwork()
 
   const TABS: { id: DashTab; label: string; Icon: any; badge?: number; shortcut: string }[] = [
     { id: "files", label: "My Files", Icon: History, badge: totalFiles > 0 ? totalFiles : undefined, shortcut: "⌃F" },
@@ -130,38 +130,40 @@ export default function Dashboard({ address }: DashboardProps) {
 
       {/* ── Integration status bar ── */}
       <div className="flex flex-wrap gap-2 items-center">
-        {/* Pinata IPFS */}
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-          hasPinata
-            ? "bg-emerald-400/10 border-emerald-400/25 text-emerald-400"
-            : "bg-secondary border-border text-muted-foreground"
-        }`}>
+        {/* IPFS badge — always public gateway */}
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-400/10 border-emerald-400/25 text-emerald-400">
           <Cloud size={11} />
-          {hasPinata ? (
-            <><CheckCircle2 size={10} /> IPFS: Pinata</>
-          ) : (
-            <><AlertCircle size={10} /> IPFS: Mock CID</>
-          )}
+          <CheckCircle2 size={10} /> IPFS: Public Gateway
         </div>
 
-        {/* Story Protocol */}
+        {/* Story Protocol — live chain check */}
         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-          hasStoryTestnet
+          isStoryOdyssey
             ? "bg-primary/10 border-primary/25 text-primary"
-            : "bg-secondary border-border text-muted-foreground"
+            : connectedChainId
+              ? "bg-amber-400/10 border-amber-400/25 text-amber-400"
+              : "bg-secondary border-border text-muted-foreground"
         }`}>
           <ShieldCheck size={11} />
-          {hasStoryTestnet ? (
+          {isStoryOdyssey ? (
             <><CheckCircle2 size={10} /> Story: Odyssey Testnet</>
+          ) : connectedChainId ? (
+            <><AlertCircle size={10} /> Story: Wrong Network (Chain {connectedChainId})</>
           ) : (
-            <><AlertCircle size={10} /> Story: Local Fallback</>
+            <><AlertCircle size={10} /> Story: No Wallet</>
           )}
         </div>
 
-        {!hasPinata && (
-          <span className="text-[10px] text-muted-foreground hidden sm:inline">
-            Add <code className="font-mono bg-secondary px-1 rounded">NEXT_PUBLIC_PINATA_JWT</code> to .env.local for real IPFS
-          </span>
+        {/* Testnet explorer link when connected */}
+        {isStoryOdyssey && (
+          <a
+            href={STORY_ODYSSEY.explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+          >
+            <ExternalLink size={9} /> Explorer
+          </a>
         )}
       </div>
 

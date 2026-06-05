@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Shield, AlertCircle } from "lucide-react"
+import { Shield, AlertCircle, Zap } from "lucide-react"
 import { toast } from "sonner"
+import { switchToStoryOdyssey, STORY_ODYSSEY } from "@/components/story-network-guard"
 
 interface WalletConnectProps {
   onConnect: (address: string) => void
@@ -17,7 +18,7 @@ export default function WalletConnect({ onConnect, compact = false }: WalletConn
     try {
       if (!window.ethereum) {
         toast.error("Wallet Not Found", {
-          description: "Please install MetaMask or another Web3 wallet to continue.",
+          description: "Please install MetaMask to connect to Story Odyssey and register IP Assets.",
           icon: <AlertCircle size={16} />,
         })
         return
@@ -26,11 +27,35 @@ export default function WalletConnect({ onConnect, compact = false }: WalletConn
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
 
       if (accounts && accounts.length > 0) {
-        toast.success("Wallet Connected!", {
-          description: `${accounts[0].slice(0, 6)}…${accounts[0].slice(-4)} is now connected.`,
-          icon: <Shield size={16} />,
-        })
-        onConnect(accounts[0])
+        // ── Auto-switch to Story Odyssey ──────────────────────────────────────
+        const chainHex = await window.ethereum.request({ method: "eth_chainId" })
+        const chainId = parseInt(chainHex as string, 16)
+
+        if (chainId !== STORY_ODYSSEY.chainId) {
+          toast.loading("Switching to Story Odyssey…", { id: "network-switch" })
+          const switched = await switchToStoryOdyssey()
+          toast.dismiss("network-switch")
+
+          if (switched) {
+            toast.success("Connected to Story Odyssey!", {
+              description: `${(accounts[0] as string).slice(0, 6)}…${(accounts[0] as string).slice(-4)} · Chain 1513`,
+              icon: <Zap size={16} />,
+            })
+          } else {
+            // Switched failed / rejected — still connect the wallet but warn
+            toast.warning("Wallet Connected — Wrong Network", {
+              description: "You'll need Story Odyssey Testnet (Chain 1513) to register IP Assets.",
+              duration: 6000,
+            })
+          }
+        } else {
+          toast.success("Wallet Connected!", {
+            description: `${(accounts[0] as string).slice(0, 6)}…${(accounts[0] as string).slice(-4)} · Story Odyssey`,
+            icon: <Shield size={16} />,
+          })
+        }
+
+        onConnect(accounts[0] as string)
       }
     } catch (err: any) {
       const msg = err?.message || "Failed to connect wallet"
@@ -79,12 +104,12 @@ export default function WalletConnect({ onConnect, compact = false }: WalletConn
       {isLoading ? (
         <>
           <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-          Connecting to Wallet…
+          Connecting to Story Odyssey…
         </>
       ) : (
         <>
           <Shield size={18} className="group-hover:animate-bounce-subtle" />
-          Connect Wallet & Get Started
+          Connect Wallet &amp; Register IP
           <span className="ml-1 group-hover:translate-x-1 transition-transform duration-200">→</span>
         </>
       )}

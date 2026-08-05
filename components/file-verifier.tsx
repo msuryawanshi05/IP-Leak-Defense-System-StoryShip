@@ -50,11 +50,11 @@ export default function FileVerifier({ expectedHash, fileName }: FileVerifierPro
         verified,
         computedHash,
         message: verified
-          ? "File is AUTHENTIC and UNCHANGED — matches the original upload."
-          : "Verification FAILED — this file does NOT match the original upload.",
+          ? "File is AUTHENTIC and UNCHANGED, matching the original upload."
+          : "Verification FAILED: this file does not match the original upload.",
       })
       if (verified) {
-        toast.success("File Verified!", { description: "Hash matches — the file is authentic and unchanged." })
+        toast.success("File Verified!", { description: "Hash matches. The file is authentic and unchanged." })
       } else {
         toast.error("Verification Failed", { description: "The file has been modified or is not the correct file." })
       }

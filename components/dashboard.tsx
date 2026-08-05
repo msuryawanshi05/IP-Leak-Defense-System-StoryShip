@@ -131,19 +131,31 @@ export default function Dashboard({ address }: DashboardProps) {
       {/* ── Integration status bar ── */}
       <div className="flex flex-wrap gap-2 items-center">
         {/* IPFS badge — always public gateway */}
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-400/10 border-emerald-400/25 text-emerald-400">
+        <div 
+          title="Using Pinata's free public IPFS gateway to pin and access content-addressed encrypted files."
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-400/10 border-emerald-400/25 text-emerald-400 cursor-help"
+        >
           <Cloud size={11} />
           <CheckCircle2 size={10} /> IPFS: Public Gateway
         </div>
 
         {/* Story Protocol — live chain check */}
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-          isStoryOdyssey
-            ? "bg-primary/10 border-primary/25 text-primary"
-            : connectedChainId
-              ? "bg-amber-400/10 border-amber-400/25 text-amber-400"
-              : "bg-secondary border-border text-muted-foreground"
-        }`}>
+        <div 
+          title={
+            isStoryOdyssey
+              ? "Connected to Story Odyssey Testnet (Chain 1513). You are ready to register files on-chain."
+              : connectedChainId
+                ? `Connected to chain ${connectedChainId}. Please switch MetaMask to Story Odyssey Testnet (Chain 1513) to register IP Assets.`
+                : "No wallet connected. Connect your wallet using the 'Connect Wallet' button to register IP Assets on Story Odyssey."
+          }
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border cursor-help ${
+            isStoryOdyssey
+              ? "bg-primary/10 border-primary/25 text-primary"
+              : connectedChainId
+                ? "bg-amber-400/10 border-amber-400/25 text-amber-400"
+                : "bg-secondary border-border text-muted-foreground"
+          }`}
+        >
           <ShieldCheck size={11} />
           {isStoryOdyssey ? (
             <><CheckCircle2 size={10} /> Story: Odyssey Testnet</>
@@ -386,7 +398,7 @@ function StandaloneVerifier() {
           </button>
           <div className="border-t border-border/50 pt-4">
             <p className="text-xs text-muted-foreground">
-              💡 <strong className="text-foreground">Tip:</strong> You can also verify files directly from version details — click any file in "My Files" tab, then use the "Verify File" tab inside the details panel.
+              💡 <strong className="text-foreground">Tip:</strong> You can also verify files directly from version details by clicking any file in the "My Files" tab and using the "Verify File" tab inside the details panel.
             </p>
           </div>
         </div>

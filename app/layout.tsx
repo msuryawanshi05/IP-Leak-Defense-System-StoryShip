@@ -1,4 +1,4 @@
-﻿import type React from "react"
+import type React from "react"
 import type { Metadata } from "next"
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
@@ -55,7 +55,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: "(function(){try{var t=localStorage.getItem('storyproof-theme');var d=document.documentElement;d.classList.remove('dark','light');if(t==='light')d.classList.add('light');else d.classList.add('dark')}catch(e){}})()" }} />
+      <head>
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: "(function(){try{var t=localStorage.getItem('storyproof-theme');var d=document.documentElement;d.classList.remove('dark','light');if(t==='light')d.classList.add('light');else d.classList.add('dark')}catch(e){}})()" }} />
+      </head>
       <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         {children}
         <Toaster

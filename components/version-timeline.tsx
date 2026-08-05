@@ -193,7 +193,7 @@ export default function VersionTimeline({ versions }: VersionTimelineProps) {
                     const url = `${window.location.origin}/verify/${version.hash}`
                     navigator.clipboard.writeText(url)
                     toast.success("Proof Link Copied!", {
-                      description: "Share this link — anyone can verify the file without a wallet.",
+                      description: "Share this link so anyone can verify the file without a wallet.",
                     })
                   }}
                   id={`share-${version.id}`}

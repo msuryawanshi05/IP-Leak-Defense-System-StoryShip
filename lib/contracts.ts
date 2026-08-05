@@ -159,14 +159,14 @@ export async function switchNetwork(chainId: number): Promise<boolean> {
           })
           return true
         } catch (addError) {
-          console.error("Failed to add network:", addError)
+          console.warn("Failed to add network:", addError)
           return false
         }
       }
-      console.error("Network not configured in wallet")
+      console.warn("Network not configured in wallet")
       return false
     }
-    console.error("Failed to switch network:", error)
+    console.warn("Failed to switch network:", error)
     return false
   }
 }

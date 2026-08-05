@@ -253,7 +253,7 @@ export default function PublicVerifyPage() {
                   <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  The file is hashed locally in your browser — nothing is uploaded.
+                  The file is hashed locally in your browser, so nothing is uploaded.
                 </p>
               </div>
             )}

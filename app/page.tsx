@@ -82,10 +82,7 @@ export default function Home() {
         {/* App Header */}
         <header className="sticky top-0 z-50 glass border-b border-[var(--glass-border)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-4">
-            <button onClick={() => setShowApp(false)} className="group flex items-center gap-2 text-left">
-              <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                <Shield size={16} className="text-primary" />
-              </div>
+            <button onClick={() => setShowApp(false)} className="flex items-center text-left">
               <div>
                 <p className="text-lg font-bold gradient-text leading-none">StoryProof</p>
                 <p className="text-[10px] text-muted-foreground leading-none mt-0.5 hidden sm:block">IP on Story blockchain</p>
@@ -150,10 +147,7 @@ export default function Home() {
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-50 glass border-b border-[var(--glass-border)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <Shield size={16} className="text-primary" />
-            </div>
+          <div className="flex items-center">
             <div>
               <p className="text-lg font-bold gradient-text leading-none">StoryProof</p>
               <p className="text-[10px] text-muted-foreground leading-none mt-0.5 hidden sm:block">IP on Story blockchain</p>
@@ -161,22 +155,12 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle compact />
-            <button
-              onClick={() => {
-                const el = document.getElementById("how-it-works")
-                el?.scrollIntoView({ behavior: "smooth" })
-              }}
-              className="btn-glow px-4 sm:px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all duration-200 hover:bg-primary/90"
-            >
-              <span className="hidden sm:inline">How It Works ↓</span>
-              <span className="sm:hidden">How?</span>
-            </button>
           </div>
         </div>
       </header>
 
       {/* ── HERO ── */}
-      <section className="hero-bg relative min-h-[92vh] flex flex-col items-center justify-center px-4 pt-8 pb-20">
+      <section className="hero-bg relative min-h-[92vh] flex flex-col items-center justify-center px-4 pt-8 pb-36">
         <div className="absolute inset-0 grid-bg" />
         <Orb className="w-96 h-96 top-[-5%] left-[-5%] bg-primary/25 animate-orb-drift" />
         <Orb className="w-80 h-80 bottom-[-5%] right-[-5%] bg-accent/20 animate-orb-drift animation-delay-500" />
@@ -197,7 +181,7 @@ export default function Home() {
           <p className="animate-fade-in-up animation-delay-200 text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
             In a world of AI-generated content and invisible ownership trails, creators need{" "}
             <span className="text-foreground font-medium">transparent, immutable proof</span> on the blockchain.
-            Welcome to StoryProof — where your IP lives forever.
+            Welcome to StoryProof, where your IP lives forever.
           </p>
 
           <div className="animate-fade-in-up animation-delay-300 flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -224,7 +208,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce-subtle">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce-subtle z-20">
           <span className="text-xs text-muted-foreground">Scroll to explore</span>
           <div className="w-5 h-8 rounded-full border border-border flex items-start justify-center pt-1.5">
             <div className="w-1 h-2 rounded-full bg-muted-foreground animate-scroll-dot" />
@@ -328,14 +312,14 @@ export default function Home() {
             {STEPS.map((s, i) => {
               const Icon = s.icon
               return (
-                <RevealSection key={s.step} delay={i * 100}>
-                  <div className="glass-card p-6 text-center group cursor-default relative z-10">
+                <RevealSection key={s.step} delay={i * 100} className="h-full">
+                  <div className="glass-card p-6 text-center group cursor-default relative z-10 h-full flex flex-col items-center">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary/15 border border-primary/25 flex items-center justify-center group-hover:bg-primary/25 group-hover:border-primary/50 group-hover:animate-pulse-glow transition-all duration-300">
                       <Icon size={22} className="text-primary" />
                     </div>
                     <span className="text-xs font-mono text-muted-foreground mb-2 block">{s.step}</span>
                     <h3 className="font-bold text-foreground mb-2">{s.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed flex-1">{s.desc}</p>
                   </div>
                 </RevealSection>
               )
@@ -356,8 +340,8 @@ export default function Home() {
               const Icon = f.icon
               const isAccent = f.color === "accent"
               return (
-                <RevealSection key={f.title} delay={i * 80}>
-                  <div className="glass-card p-6 h-full group cursor-default">
+                <RevealSection key={f.title} delay={i * 80} className="h-full">
+                  <div className="glass-card p-6 h-full group cursor-default flex flex-col">
                     <div className={`w-12 h-12 mb-4 rounded-xl flex items-center justify-center transition-all duration-300 ${
                       isAccent
                         ? "bg-accent/15 border border-accent/25 group-hover:bg-accent/25 group-hover:border-accent/50"
@@ -366,7 +350,7 @@ export default function Home() {
                       <Icon size={20} className={isAccent ? "text-accent" : "text-primary"} />
                     </div>
                     <h3 className="font-bold text-foreground mb-2">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed flex-1">{f.desc}</p>
                   </div>
                 </RevealSection>
               )
@@ -422,19 +406,17 @@ export default function Home() {
             </p>
             <WalletConnect onConnect={handleConnect} />
             <p className="text-xs text-muted-foreground mt-8">
-              Part of Ship It On Story: Hackday &mdash; Understanding and Powering IP in Nagpur
+              Part of Ship It On Story: Nagpur Hackday (Understanding and Powering IP)
             </p>
           </RevealSection>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-border/50 py-8 px-4">
+      <footer className="border-t border-border/50 py-4 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Shield size={16} className="text-primary" />
+          <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold gradient-text">StoryProof</span>
-            <span className="text-sm text-muted-foreground">&mdash; IP on Story Blockchain</span>
+            <span className="text-sm text-muted-foreground">IP on Story Blockchain</span>
           </div>
           <div className="flex items-center gap-6">
             <ThemeToggle />

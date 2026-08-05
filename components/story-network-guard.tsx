@@ -136,7 +136,7 @@ export default function StoryNetworkGuard({ children, inline = false }: StoryNet
           <AlertTriangle size={15} className="text-amber-400 flex-shrink-0" />
           <span className="text-amber-300 font-medium">
             {chainId
-              ? `Wrong network (Chain ${chainId}) — Story Odyssey required to register IP`
+              ? `Wrong network (Chain ${chainId}), Story Odyssey is required to register IP`
               : "Connect to Story Odyssey to register IP Assets"}
           </span>
         </div>

@@ -152,7 +152,7 @@ export default function NetworkSelector() {
       {/* Info */}
       <div className="p-4 rounded-xl bg-primary/5 border border-primary/15 text-xs text-muted-foreground">
         <p className="font-semibold text-foreground mb-1">💡 Why Story Network?</p>
-        <p>Story Protocol networks support IP Asset registration, programmable licensing, and royalty distribution — the full IP protection stack.</p>
+        <p>Story Protocol networks support IP Asset registration, programmable licensing, and royalty distribution, representing the full IP protection stack.</p>
       </div>
     </div>
   )

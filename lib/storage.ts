@@ -185,7 +185,7 @@ export async function uploadToIPFS(file: File, encryptedContent: ArrayBuffer): P
     // Warn user visibly — mock CID means no real decentralised storage
     if (typeof window !== "undefined") {
       const { toast } = await import("sonner")
-      toast.warning("IPFS Upload Failed — Using Local Record", {
+      toast.warning("IPFS Upload Failed: Using Local Record", {
         description: "File is hashed & registered on Story Protocol. IPFS storage was unavailable this time.",
         duration: 6000,
       })

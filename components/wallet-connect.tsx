@@ -28,29 +28,37 @@ export default function WalletConnect({ onConnect, compact = false }: WalletConn
 
       if (accounts && accounts.length > 0) {
         // ── Auto-switch to Story Odyssey ──────────────────────────────────────
-        const chainHex = await window.ethereum.request({ method: "eth_chainId" })
-        const chainId = parseInt(chainHex as string, 16)
+        try {
+          const chainHex = await window.ethereum.request({ method: "eth_chainId" })
+          const chainId = parseInt(chainHex as string, 16)
 
-        if (chainId !== STORY_ODYSSEY.chainId) {
-          toast.loading("Switching to Story Odyssey…", { id: "network-switch" })
-          const switched = await switchToStoryOdyssey()
-          toast.dismiss("network-switch")
+          if (chainId !== STORY_ODYSSEY.chainId) {
+            toast.loading("Switching to Story Odyssey…", { id: "network-switch" })
+            const switched = await switchToStoryOdyssey()
+            toast.dismiss("network-switch")
 
-          if (switched) {
-            toast.success("Connected to Story Odyssey!", {
-              description: `${(accounts[0] as string).slice(0, 6)}…${(accounts[0] as string).slice(-4)} · Chain 1513`,
-              icon: <Zap size={16} />,
-            })
+            if (switched) {
+              toast.success("Connected to Story Odyssey!", {
+                description: `${(accounts[0] as string).slice(0, 6)}…${(accounts[0] as string).slice(-4)} · Chain 1513`,
+                icon: <Zap size={16} />,
+              })
+            } else {
+              // Switched failed / rejected — still connect the wallet but warn
+              toast.warning("Wallet Connected — Wrong Network", {
+                description: "You'll need Story Odyssey Testnet (Chain 1513) to register IP Assets.",
+                duration: 6000,
+              })
+            }
           } else {
-            // Switched failed / rejected — still connect the wallet but warn
-            toast.warning("Wallet Connected — Wrong Network", {
-              description: "You'll need Story Odyssey Testnet (Chain 1513) to register IP Assets.",
-              duration: 6000,
+            toast.success("Wallet Connected!", {
+              description: `${(accounts[0] as string).slice(0, 6)}…${(accounts[0] as string).slice(-4)} · Story Odyssey`,
+              icon: <Shield size={16} />,
             })
           }
-        } else {
+        } catch (switchErr: any) {
+          console.warn("Auto-switch network failed:", switchErr)
           toast.success("Wallet Connected!", {
-            description: `${(accounts[0] as string).slice(0, 6)}…${(accounts[0] as string).slice(-4)} · Story Odyssey`,
+            description: `${(accounts[0] as string).slice(0, 6)}…${(accounts[0] as string).slice(-4)}`,
             icon: <Shield size={16} />,
           })
         }
@@ -62,7 +70,12 @@ export default function WalletConnect({ onConnect, compact = false }: WalletConn
       if (err?.code === 4001) {
         toast.error("Connection Rejected", { description: "You declined the wallet connection request." })
       } else {
-        toast.error("Connection Failed", { description: msg })
+        const isBraveError = msg.includes("-1") || msg.toLowerCase().includes("status code: -1")
+        toast.error("Connection Failed", { 
+          description: isBraveError
+            ? "Brave Wallet error. Please unlock your wallet, verify the network, or set MetaMask as default if extensions conflict."
+            : msg 
+        })
       }
     } finally {
       setIsLoading(false)
@@ -95,7 +108,7 @@ export default function WalletConnect({ onConnect, compact = false }: WalletConn
     <button
       onClick={connectWallet}
       disabled={isLoading}
-      className="btn-glow group relative inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base transition-all disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden"
+      className="btn-glow group relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden"
       id="wallet-connect-btn"
     >
       {/* Shimmer layer */}
@@ -108,7 +121,7 @@ export default function WalletConnect({ onConnect, compact = false }: WalletConn
         </>
       ) : (
         <>
-          <Shield size={18} className="group-hover:animate-bounce-subtle" />
+          <Shield size={16} className="group-hover:animate-bounce-subtle" />
           Connect Wallet &amp; Register IP
           <span className="ml-1 group-hover:translate-x-1 transition-transform duration-200">→</span>
         </>

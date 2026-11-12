@@ -190,7 +190,8 @@ export default function VersionTimeline({ versions }: VersionTimelineProps) {
                   className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation()
-                    const url = `${window.location.origin}/verify/${version.hash}`
+                    const base = process.env.NEXT_PUBLIC_BASE_PATH || ""
+                    const url = `${window.location.origin}${base}/verify/demo/?hash=${encodeURIComponent(version.hash)}`
                     navigator.clipboard.writeText(url)
                     toast.success("Proof Link Copied!", {
                       description: "Share this link so anyone can verify the file without a wallet.",

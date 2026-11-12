@@ -18,9 +18,41 @@ import { toast } from "sonner"
 
 interface DashboardProps {
   address: string | null
+  onConnect?: (addr: string) => void
 }
 
 type DashTab = "files" | "upload" | "verify" | "network"
+
+const SAMPLE_VERSIONS = [
+  {
+    id: 9001,
+    name: "Nexus_Chronicles_Pilot_Script_v2.pdf",
+    hash: "a7f8c2d94e1b6a3f90c4e8215d7b3a9f6e02c4d8a1b5f9e7c3d0a2b4c6e8f012",
+    timestamp: new Date(Date.now() - 86400 * 1000 * 2),
+    author: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+    notes: "Final Act II revision with registered character lore & world-building bible",
+    size: 482304,
+    ipfsCid: "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+    transactionHash: "0x4f9b2c81a0d73e55c1f28b9a3d6e0f124c7890a1b2c3d4e5f60718293a4b5c6d",
+    blockNumber: 1849204,
+    encryptedHash: "c4e8215d7b3a9f6e02c4d8a1b5f9e7c3d0a2b4c6e8f012a7f8c2d94e1b6a3f90",
+    ipAssetId: "0xB1e2409A7c12D88E56F01a42c982eA045d3F7812",
+  },
+  {
+    id: 9002,
+    name: "Nexus_Chronicles_Pilot_Script_v1.pdf",
+    hash: "3b1e904d8c7a2f56b1d3e9804c2a7f15d6e8b0a3c5f791e2d4b6a8c0e2f41638",
+    timestamp: new Date(Date.now() - 86400 * 1000 * 7),
+    author: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+    notes: "Initial treatment & chapter outline timestamped before pitch deck sharing",
+    size: 319488,
+    ipfsCid: "bafybeihkoviema7g3gxyt6la7vd5ho32ictqbilu3wnlo3rs7ewhnp7lly",
+    transactionHash: "0x9a1d4f62c8e03b77a5c49d2e1b8f0a367d8901c2e3f4a5b6c7d8e9f0a1b2c3d4",
+    blockNumber: 1821590,
+    encryptedHash: "d6e8b0a3c5f791e2d4b6a8c0e2f416383b1e904d8c7a2f56b1d3e9804c2a7f15",
+    ipAssetId: "0x9F217c4E8201a7B4D501c88F23a601b9E472c310",
+  },
+]
 
 /* ── Animated stat cell ── */
 function StatCell({ label, numericValue, displayValue, accent }: {
@@ -45,7 +77,7 @@ function StatCell({ label, numericValue, displayValue, accent }: {
   )
 }
 
-export default function Dashboard({ address }: DashboardProps) {
+export default function Dashboard({ address, onConnect }: DashboardProps) {
   const [versions, setVersions] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<DashTab>("files")
   const [isLoading, setIsLoading] = useState(true)
@@ -53,8 +85,11 @@ export default function Dashboard({ address }: DashboardProps) {
 
   useEffect(() => {
     const load = async () => {
-      if (!address) return
       try {
+        if (!address) {
+          setVersions(SAMPLE_VERSIONS)
+          return
+        }
         const checkpoints = getVersionCheckpoints(address)
         if (checkpoints.length > 0) {
           const loaded = checkpoints.map((cp: any, idx: number) => ({
@@ -72,6 +107,8 @@ export default function Dashboard({ address }: DashboardProps) {
             ipAssetId: cp.ipAssetId,
           }))
           setVersions(loaded.reverse())
+        } else {
+          setVersions([])
         }
       } catch (err) {
         console.error("Failed to load versions:", err)
@@ -119,6 +156,22 @@ export default function Dashboard({ address }: DashboardProps) {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {!address && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-primary/10 border border-primary/25 text-xs">
+          <div className="flex items-center gap-2 text-foreground">
+            <ShieldCheck size={15} className="text-primary flex-shrink-0" />
+            <span>
+              <strong>Preview &amp; Verification Mode:</strong> Browse sample on-chain IP records and verify any file&apos;s SHA-256 hash freely. Connect MetaMask only when uploading or registering new IP.
+            </span>
+          </div>
+          <button
+            onClick={() => setActiveTab("verify")}
+            className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+          >
+            Verify a File Now
+          </button>
+        </div>
+      )}
 
       {/* ── Stats bar ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -327,6 +380,7 @@ export default function Dashboard({ address }: DashboardProps) {
               address={address}
               onUploaded={handleFileUploaded}
               isFirstUpload={isFirstUpload}
+              onConnect={onConnect}
             />
           </div>
         </div>
@@ -384,7 +438,14 @@ function StandaloneVerifier() {
               className="w-full px-4 py-3 border border-input rounded-xl bg-input text-foreground font-mono text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
             />
             <p className="text-xs text-muted-foreground mt-2">
-              Find the hash in your version history or from the file owner.
+              Find the hash in your version history or from the file owner.{" "}
+              <button
+                type="button"
+                onClick={() => setHash(SAMPLE_VERSIONS[0].hash)}
+                className="text-primary hover:underline font-medium"
+              >
+                Use sample v1 hash
+              </button>
             </p>
           </div>
           <button

@@ -82,12 +82,22 @@ export default function Home() {
         {/* App Header */}
         <header className="sticky top-0 z-50 glass border-b border-[var(--glass-border)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-4">
-            <button onClick={() => setShowApp(false)} className="flex items-center text-left">
-              <div>
-                <p className="text-lg font-bold gradient-text leading-none">StoryProof</p>
-                <p className="text-[10px] text-muted-foreground leading-none mt-0.5 hidden sm:block">IP on Story blockchain</p>
-              </div>
-            </button>
+            <div className="flex items-center gap-3">
+              {process.env.NEXT_PUBLIC_BASE_PATH && (
+                <a
+                  href="../../"
+                  className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors border-r border-border pr-3"
+                >
+                  &larr; Portfolio
+                </a>
+              )}
+              <button onClick={() => setShowApp(false)} className="flex items-center text-left">
+                <div>
+                  <p className="text-lg font-bold gradient-text leading-none">StoryProof</p>
+                  <p className="text-[10px] text-muted-foreground leading-none mt-0.5 hidden sm:block">IP on Story blockchain</p>
+                </div>
+              </button>
+            </div>
 
             <div className="flex items-center gap-2">
               <ThemeToggle compact />
@@ -119,22 +129,7 @@ export default function Home() {
         </header>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          {isConnected ? (
-            <Dashboard address={address} />
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
-              <div className="glass-card p-10 sm:p-12 text-center max-w-md w-full animate-fade-in-up">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center animate-pulse-glow">
-                  <Shield size={28} className="text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-3 gradient-text">Connect Your Wallet</h2>
-                <p className="text-muted-foreground mb-8 leading-relaxed">
-                  Connect your wallet to access your IP portfolio, upload files, and register proof on-chain.
-                </p>
-                <WalletConnect onConnect={handleConnect} />
-              </div>
-            </div>
-          )}
+          <Dashboard address={address} onConnect={handleConnect} />
         </div>
       </main>
     )
@@ -147,13 +142,27 @@ export default function Home() {
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-50 glass border-b border-[var(--glass-border)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
+            {process.env.NEXT_PUBLIC_BASE_PATH && (
+              <a
+                href="../../"
+                className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors border-r border-border pr-3"
+              >
+                &larr; Portfolio
+              </a>
+            )}
             <div>
               <p className="text-lg font-bold gradient-text leading-none">StoryProof</p>
               <p className="text-[10px] text-muted-foreground leading-none mt-0.5 hidden sm:block">IP on Story blockchain</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowApp(true)}
+              className="px-3.5 py-2 rounded-xl border border-border text-xs font-semibold text-foreground hover:border-primary/50 hover:text-primary transition-all"
+            >
+              Open App &amp; Verify
+            </button>
             <ThemeToggle compact />
           </div>
         </div>
@@ -185,6 +194,13 @@ export default function Home() {
           </p>
 
           <div className="animate-fade-in-up animation-delay-300 flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={() => setShowApp(true)}
+              className="btn-glow group inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all"
+            >
+              Explore App &amp; Verify Files
+              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </button>
             <WalletConnect onConnect={handleConnect} />
             <button
               onClick={() => {
@@ -404,7 +420,16 @@ export default function Home() {
               Connect your wallet and start proving your IP ownership today.
               Build your on-chain portfolio and claim what&apos;s yours.
             </p>
-            <WalletConnect onConnect={handleConnect} />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <button
+                onClick={() => setShowApp(true)}
+                className="btn-glow inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all"
+              >
+                Explore App &amp; Verify
+                <ChevronRight size={16} />
+              </button>
+              <WalletConnect onConnect={handleConnect} />
+            </div>
             <p className="text-xs text-muted-foreground mt-8">
               Part of Ship It On Story: Nagpur Hackday (Understanding and Powering IP)
             </p>

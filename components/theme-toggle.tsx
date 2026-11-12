@@ -23,12 +23,12 @@ function applyTheme(theme: Theme) {
 }
 
 export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  const [theme, setTheme] = useState<Theme>("dark")
+  const [theme, setTheme] = useState<Theme>("light")
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    const saved = (localStorage.getItem("storyproof-theme") as Theme) || "dark"
+    const saved = (localStorage.getItem("storyproof-theme") as Theme) || "light"
     setTheme(saved)
     applyTheme(saved)
 

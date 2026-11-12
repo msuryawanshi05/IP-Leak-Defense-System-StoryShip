@@ -8,14 +8,16 @@ import { UploadCloud, FileText, X, CheckCircle2, Loader2, Shield } from "lucide-
 import { toast } from "sonner"
 import { fireConfetti, fireSideCannons } from "@/lib/confetti"
 import StoryNetworkGuard, { useStoryNetwork } from "@/components/story-network-guard"
+import WalletConnect from "@/components/wallet-connect"
 
 interface FileUploadProps {
   address: string | null
   onUploaded: (version: any) => void
   isFirstUpload?: boolean
+  onConnect?: (addr: string) => void
 }
 
-export default function FileUpload({ address, onUploaded, isFirstUpload = false }: FileUploadProps) {
+export default function FileUpload({ address, onUploaded, isFirstUpload = false, onConnect }: FileUploadProps) {
   const [file, setFile] = useState<File | null>(null)
   const [notes, setNotes] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -158,12 +160,12 @@ export default function FileUpload({ address, onUploaded, isFirstUpload = false 
           <Shield size={28} className="text-primary" />
         </div>
         <div>
-          <h3 className="font-bold text-foreground mb-1">Connect Wallet to Register IP</h3>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            StoryProof uses Story Odyssey Testnet to create an on-chain, immutable record of your creative work.
-            Connect your wallet to get started.
+          <h3 className="font-bold text-foreground mb-1">Connect Wallet to Upload &amp; Register IP</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Viewing and SHA-256 verification are open to everyone. Connect your MetaMask wallet when you&apos;re ready to encrypt, pin to IPFS, and register proof on Story Odyssey Testnet.
           </p>
         </div>
+        {onConnect && <WalletConnect onConnect={onConnect} />}
         <div className="flex flex-wrap gap-3 justify-center text-xs text-muted-foreground">
           <span className="px-3 py-1.5 rounded-full border border-border bg-secondary/50">🔐 SHA-256 Hashed</span>
           <span className="px-3 py-1.5 rounded-full border border-border bg-secondary/50">⛓️ Story Protocol</span>

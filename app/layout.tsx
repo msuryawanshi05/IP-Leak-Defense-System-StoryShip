@@ -54,9 +54,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="light" style={{ colorScheme: "light" }} suppressHydrationWarning>
       <head>
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: "(function(){try{var t=localStorage.getItem('storyproof-theme');var d=document.documentElement;d.classList.remove('dark','light');if(t==='light')d.classList.add('light');else d.classList.add('dark')}catch(e){}})()" }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: "(function(){try{var d=document.documentElement;d.classList.remove('dark');d.classList.add('light');localStorage.setItem('storyproof-theme','light');}catch(e){}})()" }} />
       </head>
       <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         {children}
@@ -73,7 +73,7 @@ export default function RootLayout({
           }}
           richColors
         />
-        <Analytics />
+        {!process.env.NEXT_PUBLIC_BASE_PATH && <Analytics />}
       </body>
     </html>
   )
